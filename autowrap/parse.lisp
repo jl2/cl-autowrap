@@ -401,7 +401,7 @@ Return the appropriate CFFI name."))
                      (extern-package accessor-package)
                      constant-accessor exclude-constants
                      (trace-c2ffi *trace-c2ffi*) no-accessors no-functions
-                     release-p version
+                     release-p version language
                      type-symbol-function c-to-lisp-function)
   (let ((*foreign-symbol-exceptions* (alist-hash-table symbol-exceptions :test 'equal))
         (*foreign-symbol-regex* (make-scanners symbol-regex))
@@ -433,7 +433,8 @@ Return the appropriate CFFI name."))
                              :spec-path spec-path
                              :arch-excludes exclude-arch
                              :sysincludes sysincludes
-                             :version version))
+                             :version version
+                             :language language))
       (with-open-file (in-spec spec-name)
         (collecting-symbols
           `(progn

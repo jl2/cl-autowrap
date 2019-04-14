@@ -71,13 +71,14 @@ doesn't exist, we will get a return code other than 0."
       ,@body)
     :keep ,keep))
 
-(defun run-c2ffi (input-file output-basename &key arch sysincludes ignore-error-status)
+(defun run-c2ffi (input-file output-basename &key arch sysincludes ignore-error-status language)
   "Run c2ffi on `INPUT-FILE`, outputting to `OUTPUT-FILE` and
 `MACRO-OUTPUT-FILE`, optionally specifying a target triple `ARCH`."
   (with-temporary-file (:pathname tmp-macro-file
                         :keep *trace-c2ffi*)
     (let* ((output-spec (string+ output-basename ".spec"))
            (arch (when arch (list "-A" arch)))
+           (lang (if language (format nil "-x~a" language) nil))
            (sysincludes (loop for dir in sysincludes
                               append (list "-i" dir))))
       ;; Invoke c2ffi to emit macros into TMP-MACRO-FILE
@@ -96,7 +97,7 @@ doesn't exist, we will get a return code other than 0."
           (close tmp-include-file-stream)
           ;; Invoke c2ffi again to generate the final output.
           (run-check *c2ffi-program* (list* (namestring tmp-include-file) "-o" output-spec
-                                            (append arch sysincludes))
+                                            (append arch lang sysincludes))
                      :output *standard-output*
                      :ignore-error-status ignore-error-status))))))
 
@@ -113,10 +114,11 @@ if the file does not exist."
     (when (probe-file h-name) h-name)))
 
 (defun ensure-local-spec (name &key
-                          (spec-path *default-pathname-defaults*)
-                          arch-excludes
-                          sysincludes
-                          version)
+                                 (spec-path *default-pathname-defaults*)
+                                 arch-excludes
+                                 sysincludes
+                                 version
+                                 language)
   (flet ((spec-path (arch) (string+ (namestring spec-path)
                                     (pathname-name name)
                                     (if version
@@ -133,16 +135,18 @@ if the file does not exist."
             (let ((arch (local-arch)))
               (run-c2ffi name (spec-path arch)
                          :arch arch
-                         :sysincludes sysincludes))
+                         :sysincludes sysincludes
+                         :language language))
             (loop with local-arch = (local-arch)
-                  for arch in *known-arches* do
-                    (unless (or (string= local-arch arch)
-                                (member arch arch-excludes :test #'string=))
-                      (unless (run-c2ffi name (spec-path arch)
-                                         :arch arch
-                                         :sysincludes sysincludes
-                                         :ignore-error-status t)
-                        (warn "Error generating spec for other arch: ~S" arch))))
+               for arch in *known-arches* do
+                 (unless (or (string= local-arch arch)
+                             (member arch arch-excludes :test #'string=))
+                   (unless (run-c2ffi name (spec-path arch)
+                                      :arch arch
+                                      :sysincludes sysincludes
+                                      :ignore-error-status t
+                                      :language language)
+                     (warn "Error generating spec for other arch: ~S" arch))))
             (if-let (h-name (find-local-spec name spec-path))
               h-name
               (error "Error finding spec for ~S after running c2ffi" name)))))))
