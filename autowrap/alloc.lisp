@@ -60,6 +60,8 @@
 
  ;; Allocating things
 
+(declaim (inline realloc alloc-ptr calloc-ptr alloc calloc free))
+
 (defun alloc-ptr (type &optional (count 1))
   "Return a pointer allocated to the size of `TYPE`"
   (c-malloc
