@@ -78,7 +78,7 @@ doesn't exist, we will get a return code other than 0."
                         :keep *trace-c2ffi*)
     (let* ((output-spec (string+ output-basename ".spec"))
            (arch (when arch (list "-A" arch)))
-           (lang (if language (format nil "-x~a" language) nil))
+           (lang (if language (list (format nil "-x~a" language)) nil))
            (sysincludes (loop for dir in sysincludes
                               append (list "-i" dir))))
       ;; Invoke c2ffi to emit macros into TMP-MACRO-FILE
