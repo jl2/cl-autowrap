@@ -714,7 +714,9 @@ types."
           (with-gensyms (!fun !fields rest)
             (let ((form
                     (if make-function-p
-                        `(defun ,fun-name (,@maybe-cbv-return
+                        `(progn
+                           (declaim (inline ,fun-name))
+                           (defun ,fun-name (,@maybe-cbv-return
                                            ,@param-names ,@(when (foreign-function-variadic-p fun) `(&rest ,rest)))
                            ,@(when maybe-cbv-return `((declare (ignorable ,@maybe-cbv-return))))
                            ,(let ((!fun (find-function name-or-function)))
@@ -725,7 +727,7 @@ types."
                                  param-names
                                  !fields
                                  (make-foreign-funcall !fun (and maybe-cbv-return 'return-value)
-                                                       param-syms (when (foreign-function-variadic-p fun) rest))))))
+                                                       param-syms (when (foreign-function-variadic-p fun) rest)))))))
                         `(defmacro ,fun-name (,@maybe-cbv-return
                                               ,@param-names ,@(when (foreign-function-variadic-p fun) `(&rest ,rest)))
                            ,@(when maybe-cbv-return `((declare (ignorable ,@maybe-cbv-return))))
@@ -736,6 +738,7 @@ types."
                                 ',param-syms
                                 (list ,@param-names)
                                 ,!fields
+                                (declaim (inline ,!fun))
                                 (make-foreign-funcall ,!fun ,(and maybe-cbv-return 'return-value)
                                                       ',param-syms ,(when (foreign-function-variadic-p fun) rest)))))))))
               `(progn
